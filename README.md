@@ -1,47 +1,43 @@
-# A Neovim Plugin Template
+# ⌨️ Keymap Menu
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ellisonleao/nvim-plugin-template/lint-test.yml?branch=main&style=for-the-badge)
-![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
+A lua plugin for Neovim that displays a searchable menu of key bindings that can be executed.
 
-A template repository for Neovim plugins.
+## 🪙 Features
 
-## Using it
+- search keybindings by lhs
+- search keybindings by description
+- includes:
+  - default keybinds found in index.txt
+  - overrides set via vim.keymap.set
 
-Via `gh`:
+## 📦 Installation
 
+Install the plugin with your preferred package manager:
+
+### [lazy.nvim](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+  "giancarlo-misasi/keymap-menu.nvim",
+  opts = {
+    -- your configuration comes here
+    -- or leave it empty to use the default settings
+    -- refer to the configuration section below
+  }
+}
 ```
-$ gh repo create my-plugin -p ellisonleao/nvim-plugin-template
-```
 
-Via github web page:
+### [packer](https://github.com/wbthomason/packer.nvim)
 
-Click on `Use this template`
-
-![](https://docs.github.com/assets/cb-36544/images/help/repository/use-this-template-button.png)
-
-## Features and structure
-
-- 100% Lua
-- Github actions for:
-  - running tests using [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) and [busted](https://olivinelabs.com/busted/)
-  - check for formatting errors (Stylua)
-  - vimdocs autogeneration from README.md file
-  - luarocks release (LUAROCKS_API_KEY secret configuration required)
-
-### Plugin structure
-
-```
-.
-├── lua
-│   ├── plugin_name
-│   │   └── module.lua
-│   └── plugin_name.lua
-├── Makefile
-├── plugin
-│   └── plugin_name.lua
-├── README.md
-├── tests
-│   ├── minimal_init.lua
-│   └── plugin_name
-│       └── plugin_name_spec.lua
+```lua
+use {
+  "giancarlo-misasi/keymap-menu.nvim",
+  config = function()
+    require("keymap-menu").setup {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+    }
+  end
+}
 ```
