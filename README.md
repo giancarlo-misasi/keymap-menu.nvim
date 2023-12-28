@@ -77,3 +77,7 @@ To add a key binding to open the menu in vscode when using vscode-neovim:
     "args": "<F4>"
 }
 ```
+
+## 🖼️ Screenshots
+
+![Screenshot](https://github.com/giancarlo-misasi/keymap-menu.nvim/tree/main/screenshots/menu-screenshot.png)
