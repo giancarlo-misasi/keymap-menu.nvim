@@ -4,46 +4,112 @@ local Common = require("keymap-menu.keymap.common")
 local Defaults = require("keymap-menu.keymap.defaults")
 local Overrides = require("keymap-menu.keymap.overrides")
 
-local function create_telescope_items(keymaps)
-  local items = {}
-  for _, metadata in ipairs(keymaps) do
-    table.insert(items, { label = metadata.lhs, detail = metadata.desc, metadata = metadata })
+local function load_check()
+  if not M.loaded or M.opts.always_reload then
+    M.load()
   end
-  return items
 end
 
-local function create_vscode_items(keymaps)
-  local items = {}
-  for _, metadata in ipairs(keymaps) do
-    table.insert(items, { label = metadata.lhs, detail = metadata.desc, metadata = metadata })
-  end
-  return items
+---@param items table<number, KeymapMetadata>
+---@param metadata KeymapMetadata
+local function insert_keymap_as_item(items, metadata)
+  ---@class KeymapMenuItem
+  local item = {
+    label = metadata.lhs,
+    detail = metadata.desc,
+    metadata = metadata,
+  }
+  table.insert(items, item)
 end
 
--- local function send(keys, mode)
---     keys = vim.api.nvim_replace_termcodes(keys, true, false, true)
---     vim.api.nvim_feedkeys(keys, mode, false)
--- end
+M.loaded = false
 
----@param options table
-function M.setup(options)
-  options = options or {}
-  Overrides.setup(options)
+---@type table<string, table<number, KeymapMetadata>>
+M.keymaps = {}
+
+---@type table<number, KeymapMetadata>
+M.motions = {}
+
+---@type table<number, KeymapMetadata>
+M.textobjects = {}
+
+---@param opts KeymapMenuKeymapConfig
+function M.setup(opts)
+  M.opts = opts
+  Defaults.setup(opts.defaults)
+  Overrides.setup(opts.overrides)
 end
 
-function M.get_keymap_items(mode)
+function M.load()
   ---@type table<string, table<string, KeymapMetadata>>
   local all = {}
   Common.merge_keymaps(Defaults.get_default_keymaps(), all)
   Common.merge_keymaps(Overrides.get_override_keymaps(), all)
+  M.keymaps = Common.sort_keymaps(all)
 
-  ---@type table<number, KeymapMetadata>
-  local keymaps = Common.sort_keymaps(all)[mode]
-  if vim.g.vscode then
-    return create_vscode_items(keymaps)
-  else
-    return create_telescope_items(keymaps)
+  -- motions and textobjects
+  M.motions = {}
+  M.textobjects = {}
+  for _, keymaps in pairs(M.keymaps) do
+    for _, keymap in ipairs(keymaps) do
+      if keymap.motion then
+        table.insert(M.motions, keymap)
+      end
+      if keymap.textobject then
+        table.insert(M.textobjects, keymap)
+      end
+    end
   end
+
+  M.loaded = true
+end
+
+---@param mode string
+---@return table<number, KeymapMenuItem>
+function M.get_keymap_items(mode)
+  load_check()
+
+  local items = {}
+  for _, metadata in ipairs(M.keymaps[mode]) do
+    insert_keymap_as_item(items, metadata)
+  end
+  return items
+end
+
+---@return table<number, KeymapMenuItem>
+function M.get_motion_items()
+  load_check()
+
+  local items = {}
+  for _, metadata in ipairs(M.motions) do
+    insert_keymap_as_item(items, metadata)
+  end
+  return items
+end
+
+---@return table<number, KeymapMenuItem>
+function M.get_textobject_items()
+  load_check()
+
+  local items = {}
+  for _, metadata in ipairs(M.textobjects) do
+    insert_keymap_as_item(items, metadata)
+  end
+  return items
+end
+
+---@return table<number, KeymapMenuItem>
+function M.get_motion_and_textobject_items()
+  load_check()
+
+  local items = {}
+  for _, metadata in ipairs(M.motions) do
+    insert_keymap_as_item(items, metadata)
+  end
+  for _, metadata in ipairs(M.textobjects) do
+    insert_keymap_as_item(items, metadata)
+  end
+  return items
 end
 
 return M

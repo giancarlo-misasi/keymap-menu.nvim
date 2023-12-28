@@ -18,26 +18,37 @@ Install the plugin with your preferred package manager:
 
 ```lua
 {
-  "giancarlo-misasi/keymap-menu.nvim",
-  opts = {
-    -- your configuration comes here
-    -- or leave it empty to use the default settings
-    -- refer to the configuration section below
-  }
+		"giancarlo-misasi/keymap-menu.nvim",
+		priority = 1001,
+		lazy = false,
+		config = true
 }
 ```
 
-### [packer](https://github.com/wbthomason/packer.nvim)
+## ⚙️ Configuration
 
 ```lua
-use {
-  "giancarlo-misasi/keymap-menu.nvim",
-  config = function()
-    require("keymap-menu").setup {
-      -- your configuration comes here
-      -- or leave it empty to use the default settings
-      -- refer to the configuration section below
-    }
-  end
+local defaults = {
+  feed_on_select = true,
+  prompt_for_expansions = true,
+  ---@type fun(item: any, idx: number)
+  on_select = function(_, _) end,
+  ---@class KeymapMenuHealthConfig
+  health = {
+    enabled = true,
+  },
+  ---@class KeymapMenuKeymapConfig
+  keymap = {
+    always_reload = false,
+    ---@class KeymapMenuDefaultsConfig
+    defaults = {},
+    ---@class KeymapMenuOverridesConfig
+    overrides = {
+      ---@type fun(lhs: string, rhs: function | string, desc: string, source: string): boolean
+      ignore_keymap_overrides = function(_, _, _, _)
+        return false
+      end,
+    },
+  },
 }
 ```

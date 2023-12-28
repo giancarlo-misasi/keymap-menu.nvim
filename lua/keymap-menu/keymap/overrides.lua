@@ -3,10 +3,6 @@ local M = {}
 local Common = require("keymap-menu.keymap.common")
 local Strings = require("keymap-menu.util.strings")
 
----@type table<string, table<number, string>>
-local sources = {}
-local vim_keymap_set = vim.keymap.set
-
 ---@param mode string
 ---@param lhs string
 ---@param rhs function | string | nil
@@ -15,69 +11,37 @@ local function hash(mode, lhs, rhs)
   return mode .. "~" .. lhs .. "~" .. Strings.get_function_info(rhs):lower()
 end
 
----@param mode string
+---@param rhs function | string | nil
+---@return string
+local function default_source(rhs)
+  return Strings.get_function_info(rhs):lower()
+end
+
+---@param info { source?: string, currentline?: number }
+---@param rhs function | string | nil
+---@return string
+local function build_source(info, rhs)
+  local source = default_source(rhs)
+  if info.source and info.currentline then
+    source = info.source .. ":" .. info.currentline
+  end
+  return source
+end
+
+---@param mode table | string
 ---@param lhs string
 ---@param rhs function | string | nil
 ---@param source string
 local function add_source(mode, lhs, rhs, source)
-  local h = hash(mode, lhs, rhs)
-  sources[h] = sources[h] or {}
-  table.insert(sources[h], source)
-end
-
-local function override_vim_keymap_set()
-  vim.keymap.set = function(mode, lhs, rhs, opts)
-    local tokens = Common.parse_tokens(lhs)
-    lhs = Common.get_lhs_from_tokens(tokens)
-
-    local info = debug.getinfo(2, "Sl")
-    local source = Strings.get_function_info(rhs):lower()
-    if info.source and info.currentline then
-      source = info.source .. ":" .. info.currentline
+  if type(mode) == "table" then
+    for _, m in ipairs(mode) do
+      add_source(m, lhs, rhs, source)
     end
-
-    if type(mode) == "table" then
-      for _, m in ipairs(mode) do
-        add_source(m, lhs, rhs, source)
-      end
-    else
-      add_source(mode, lhs, rhs, source)
-    end
-
-    vim_keymap_set(mode, lhs, rhs, opts)
+  else
+    local h = hash(mode, lhs, rhs)
+    M.sources[h] = M.sources[h] or {}
+    table.insert(M.sources[h], source)
   end
-end
-
----@param lhs string
----@param source table<number, string>
----@return boolean
-local function ignore_keymap_overrides(lhs, rhs, desc, source)
-  -- ignore nop
-  if desc == "nop" then
-    return true
-  end
-
-  -- ignore vscode and plugin remaps: <cmd>, <plug>
-  if type(rhs) == "string" and (Strings.starts_with(rhs, "<Cmd>") or Strings.starts_with(rhs, "<Plug>")) then
-    return true
-  end
-
-  -- ignore vscode-neovim remaps
-  if source[#source]:match("vscode%-neovim") then
-    return true
-  end
-
-  -- ignore cutlass.nvim blackhole register keymaps
-  if source[#source]:match("cutlass.nvim") and Strings.starts_with(rhs, '"_') then
-    return true
-  end
-
-  -- ignore any remaps of f,F,t,T
-  if lhs == "f" or lhs == "F" or lhs == "t" or lhs == "T" then
-    return true
-  end
-
-  return false
 end
 
 ---@param mode string
@@ -97,12 +61,11 @@ local function parse_override_keymap(mode, keymap, results)
   -- determine override attributes
   local rhs = keymap.rhs or keymap.callback
   local source = M.get_source(mode, lhs, rhs)
-  local desc = Strings.trim(keymap.desc or ("description missing: " .. vim.inspect(source)))
+  local desc = Strings.trim(keymap.desc or ("description missing: " .. vim.inspect(source))) or ""
   local sort = Strings.alpha_numeric_symbol_sort_string(lhs)
 
-  -- ignore keymaps where lhs or desc is inaccurate and
-  -- the default keymap metadata is already correct
-  if ignore_keymap_overrides(lhs, rhs, desc, source) then
+  -- check for excluded keymaps
+  if M.opts.ignore(lhs, rhs, desc, source) then
     return
   end
 
@@ -115,6 +78,7 @@ local function parse_override_keymap(mode, keymap, results)
       desc = desc,
       lhs = lhs,
       rhs = rhs,
+      expansions = {},
       register = false,
       operator = false,
       motion = false,
@@ -147,15 +111,21 @@ local function parse_override_keymap(mode, keymap, results)
   end
 end
 
----@param options table
-function M.setup(options)
-  options = options or {}
-  sources = {}
-  override_vim_keymap_set()
-end
+---@type table<string, table<number, string>>
+M.sources = {}
+M.vim_keymap_set = vim.keymap.set
 
-function M.debug_sources()
-  print(vim.inspect(sources))
+---@param opts KeymapMenuOverridesConfig
+function M.setup(opts)
+  M.opts = opts
+  M.sources = {}
+  vim.keymap.set = function(mode, lhs, rhs, opts)
+    local tokens = Common.parse_tokens(lhs)
+    lhs = Common.get_lhs_from_tokens(tokens)
+    M.vim_keymap_set(mode, lhs, rhs, opts)
+    local source = build_source(debug.getinfo(2, "Sl"), rhs)
+    add_source(mode, lhs, rhs, source)
+  end
 end
 
 ---@param mode string
@@ -164,7 +134,7 @@ end
 ---@return table<number, string>
 function M.get_source(mode, lhs, rhs)
   local h = hash(mode, lhs, rhs)
-  return sources[h] or { Strings.get_function_info(rhs):lower() } -- or { "source not available" }
+  return M.sources[h] or { default_source(rhs) }
 end
 
 ---@return table<string, table<string, KeymapMetadata>>

@@ -1,3 +1,4 @@
+require("keymap-menu").setup() -- to initialize default options
 local plugin = require("keymap-menu.keymap.defaults")
 
 local Util = require("keymap-menu.util")
@@ -5,7 +6,7 @@ local Util = require("keymap-menu.util")
 describe("setup", function()
   it("get_default_keymaps works", function()
     local actual = plugin.get_default_keymaps()
-    assert.are.equals(3, Util.tables.size(actual))
+    assert.are.equals(4, Util.tables.size(actual))
 
     local normal = actual["n"]
     assert.is_not_nil(normal)
@@ -18,6 +19,10 @@ describe("setup", function()
     local visual = actual["v"]
     assert.is_not_nil(visual)
     assert.are.equals(81, Util.tables.size(visual))
+
+    local textobjects = actual["textobjects"]
+    assert.is_not_nil(textobjects)
+    assert.are.equals(36, Util.tables.size(textobjects))
   end)
 
   it("keymap has correct structure and values", function()

@@ -25,12 +25,12 @@ local sections = {
 ---@param line string
 ---@return string
 local function parse_section(section, line)
-  for key, pattern in pairs(sections) do
+  for _, pattern in pairs(sections) do
     if string.find(line, pattern) then
-      return key
+      return pattern
     end
   end
-  return section
+  return Util.strings.trim(section) or ""
 end
 
 ---@param tag string
@@ -71,6 +71,7 @@ local function parse_default_keymap_line(path, lines, section, line, line_number
   if not tag or not char or not desc then
     return section, line_number
   end
+  note = Util.strings.trim(note)
 
   -- ignore tags which we don't want/need to parse
   -- skip the 4 digraph mappings which we don't care about and need special handling
@@ -105,12 +106,27 @@ local function parse_default_keymap_line(path, lines, section, line, line_number
   local expansions = Common.get_expansions_from_tokens(tokens)
   local source = path .. ":" .. line_number
 
+  -- check for excluded keymaps
+  if M.opts.ignore(lhs, desc, source) then
+    return section, line_number
+  end
+
   -- parse the full description
   local nextLine = lines[line_number + 1]
   while nextLine and string.match(nextLine, "^%s") do
     desc = Util.strings.trim(desc) .. " " .. Util.strings.trim(nextLine)
     line_number = line_number + 1
     nextLine = lines[line_number + 1]
+  end
+
+  -- only include motions from normal mode
+  local motion = mode == "n" and note == "1" and not Util.strings.starts_with(lhs, "<c-")
+
+  -- textobjects appear twice
+  -- when we parse them treat them as normal mode mappings
+  local textobject = section == sections.text_objects and mode == "v"
+  if textobject then
+    mode = "textobjects"
   end
 
   return section,
@@ -123,10 +139,15 @@ local function parse_default_keymap_line(path, lines, section, line, line_number
       expansions = expansions,
       register = register,
       operator = not not expansions,
-      motion = note == "1" and not Util.strings.starts_with(lhs, "<c-"),
-      textobject = section == sections.text_objects and mode == "v",
+      motion = motion,
+      textobject = textobject,
       sort = Util.strings.alpha_numeric_symbol_sort_string(lhs),
     }
+end
+
+---@param opts KeymapMenuDefaultsConfig
+function M.setup(opts)
+  M.opts = opts
 end
 
 ---@return table<string, table<string, KeymapMetadata>>

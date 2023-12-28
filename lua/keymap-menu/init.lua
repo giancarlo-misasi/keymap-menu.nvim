@@ -10,47 +10,88 @@ local M = {}
 -- use this to setup telescope display: https://github.com/nvim-telescope/telescope-ui-select.nvim/blob/master/lua/telescope/_extensions/ui-select.lua
 -- lua print(vim.inspect(require("keymap-menu.keymap.overrides").get_source("n", "a")))
 -- lua require("keymap-menu.keymap.overrides").debug_sources()
-local function search_expansion(item, expansion)
+
+local function ui_select(items, prompt, on_select)
+  local opts = {
+    prompt = prompt,
+    format_item = function(item)
+      return item.label
+    end,
+  }
+  vim.ui.select(items, opts, on_select)
+end
+
+local function ui_select_replace(items, prompt, keymap, expansion)
+  ui_select(items, prompt, function(item, _)
+    if item then
+      keymap.label = Util.strings.replace_first(keymap.label, expansion, item.label)
+    end
+  end)
+end
+
+local function ui_input_replace(prompt, keymap, expansion)
+  local opts = {
+    prompt = prompt,
+  }
+  vim.ui.input(opts, function(input)
+    if input then
+      keymap.label = Util.strings.replace_first(keymap.label, expansion, input)
+    end
+  end)
+end
+
+local function feedkeys(keys, mode)
+  keys = vim.api.nvim_replace_termcodes(keys, true, false, true)
+  vim.api.nvim_feedkeys(keys, mode, false)
+end
+
+local function prompt_for_expansion(keymap, expansion)
+  local prompt = "Pick a " .. expansion .. " for " .. keymap.label
   if expansion == "{motion}" then
-    -- TODO: Prompt
-    item.label = Util.strings.replace_first(item.label, "{motion}", "iw")
+    local items = Keymap.get_motion_and_textobject_items()
+    ui_select_replace(items, prompt, keymap, expansion)
+  else
+    ui_input_replace(prompt, keymap, expansion)
   end
 end
 
-local function search_expansions(item)
-  if item.metadata.expansions then
-    for _, expansion in ipairs(item.metadata.expansions) do
-      search_expansion(item, expansion)
+local function prompt_for_expansions(keymap)
+  if keymap.metadata.expansions then
+    for _, expansion in ipairs(keymap.metadata.expansions) do
+      prompt_for_expansion(keymap, expansion)
     end
   end
 end
 
 ---@param opts? KeymapMenuConfig
 function M.setup(opts)
-  if not Health.check() then
+  Config.setup(opts)
+
+  if not Health.check(Config.opts.health) then
     return
   end
-  Keymap.setup(opts or {})
+
+  Keymap.setup(Config.opts.keymap)
 end
 
----@param on_select function<any, number>
-function M.search_normal_keymaps(on_select)
+--- Opens a vim.ui.select menu to pick (and feed) keymap sequences
+function M.select_keymap()
   local items = Keymap.get_keymap_items("n")
-  vim.ui.select(items, {
-    prompt = "Filter the keymaps by keys or descriptions:",
-    format_item = function(item)
-      return item.label
-    end,
-  }, function(item, idx)
-    if item then
-      search_expansions(item)
-      on_select(item, idx)
+  ui_select(items, "Pick a keymap", function(item, idx)
+    if not item then
+      return
     end
+
+    if Config.opts.prompt_for_expansions then
+      prompt_for_expansions(item)
+
+      if Config.opts.feed_on_select then
+        feedkeys(item.label, "n")
+      end
+    end
+
+    Config.opts.on_select(item, idx)
   end)
 end
-
--- function M.debug_keymaps()
---   -- TODO: Show source info
--- end
 
 return M

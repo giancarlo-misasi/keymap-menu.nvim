@@ -3,19 +3,17 @@ local M = {}
 local Util = require("keymap-menu.util")
 
 ---@class KeymapMetadata
-local example_keymap = {
-  debug = { { "source:123" } },
-  mode = "n",
-  desc = "description",
-  lhs = "c{motion}",
-  rhs = "",
-  expansions = { "{motion}" },
-  register = false,
-  operator = false,
-  motion = false,
-  textobject = false,
-  sort = "sort",
-}
+---@field debug table<number, string>
+---@field mode string
+---@field desc string | nil
+---@field lhs string
+---@field rhs function | string | nil
+---@field expansions table<number, string>
+---@field register boolean
+---@field operator boolean
+---@field motion boolean
+---@field textobject boolean
+---@field sort string
 
 ---@param first_key string
 ---@param all_chars string
