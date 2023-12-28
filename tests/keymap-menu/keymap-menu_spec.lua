@@ -1,16 +1,40 @@
-describe("setup", function()
-  it("search_normal_keys works", function()
-    vim.ui.select = function(items, opts, on_choice)
-      on_choice(items[1], 1)
-    end
+local plugin = require("keymap-menu")
+local selected_idx = 1
 
-    local plugin = require("keymap-menu")
-    plugin.setup({
-      on_select = function(item, idx)
-        vim.g._result_item = item
-        vim.g._result_idx = idx
-      end,
-    })
+-- test setup
+plugin.setup({
+  keymap = {
+    always_reload = true,
+  },
+  on_select = function(item, idx)
+    vim.g._result_item = item
+    vim.g._result_idx = idx
+  end,
+})
+
+local function before_each()
+  selected_idx = 1
+  vim.g._result_item = nil
+  vim.g._result_idx = nil
+end
+
+-- mocking
+local function override_select(target_lhs)
+  vim.ui.select = function(items, opts, on_choice)
+    for idx, item in ipairs(items) do
+      if item.metadata.lhs == target_lhs then
+        selected_idx = idx
+        break
+      end
+    end
+    on_choice(items[selected_idx], selected_idx)
+  end
+end
+
+describe("setup", function()
+  it("select_keymap works", function()
+    before_each()
+    override_select("a")
     plugin.select_keymap()
 
     assert.are.equals("a", vim.g._result_item.label)
@@ -18,37 +42,19 @@ describe("setup", function()
     assert.are.equals(1, vim.g._result_idx)
   end)
 
-  -- it("search_normal_keys with motion works", function()
-  --   vim.ui.select = function(items, opts, on_choice)
-  --     on_choice(items[5], 1)
-  --   end
+  it("select_keymap with motion works", function()
+    before_each()
+    override_select("c{motion}")
+    plugin.select_keymap()
 
-  --   local plugin = require("keymap-menu")
-  --   plugin.setup({
-  --     on_select = function(item, idx)
-  --       vim.g._result_item = item
-  --       vim.g._result_idx = idx
-  --     end,
-  --   })
-  --   plugin.select_keymap()
+    assert.are.equals("cgd", vim.g._result_item.label)
+    assert.are.equals("index.txt:375", vim.g._result_item.metadata.debug[1]:match("index.txt:375"))
+    assert.are.equals(4, vim.g._result_idx)
+  end)
 
-  --   assert.are.equals("ciw", vim.g._result_item.label)
-  --   assert.are.equals("index.txt:375", vim.g._result_item.metadata.debug[1]:match("index.txt:375"))
-  --   assert.are.equals(1, vim.g._result_idx)
-  -- end)
-
-  it("search_normal_keys for override works", function()
-    vim.ui.select = function(items, opts, on_choice)
-      on_choice(items[1], 1)
-    end
-
-    local plugin = require("keymap-menu")
-    plugin.setup({
-      on_select = function(item, idx)
-        vim.g._result_item = item
-        vim.g._result_idx = idx
-      end,
-    })
+  it("select_keymap for override works", function()
+    before_each()
+    override_select("a")
     vim.keymap.set("n", "a", "ciwapple<esc>")
     plugin.select_keymap()
 
@@ -57,20 +63,11 @@ describe("setup", function()
     assert.are.equals(1, vim.g._result_idx)
   end)
 
-  it("search_normal_keys for override with function works", function()
+  it("select_keymap for function based override works", function()
     local function test_rhs() end
 
-    vim.ui.select = function(items, opts, on_choice)
-      on_choice(items[1], 1)
-    end
-
-    local plugin = require("keymap-menu")
-    plugin.setup({
-      on_select = function(item, idx)
-        vim.g._result_item = item
-        vim.g._result_idx = idx
-      end,
-    })
+    before_each()
+    override_select("a")
     vim.keymap.set({ "n", "x", "o" }, "a", test_rhs)
     plugin.select_keymap()
 
@@ -80,26 +77,8 @@ describe("setup", function()
   end)
 
   it("remap delete works", function()
-    local selected_idx = 1
-
-    vim.ui.select = function(items, opts, on_choice)
-      for idx, item in ipairs(items) do
-        if item.metadata.lhs == "<del>" then
-          selected_idx = idx
-          break
-        end
-      end
-
-      on_choice(items[selected_idx], selected_idx)
-    end
-
-    local plugin = require("keymap-menu")
-    plugin.setup({
-      on_select = function(item, idx)
-        vim.g._result_item = item
-        vim.g._result_idx = idx
-      end,
-    })
+    before_each()
+    override_select("<del>")
     vim.keymap.set("n", "<Del>", '"_x')
     plugin.select_keymap()
 
