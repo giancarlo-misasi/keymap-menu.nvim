@@ -27,6 +27,8 @@ Install the plugin with your preferred package manager:
 
 ## ⚙️ Configuration
 
+Default setup:
+
 ```lua
 local defaults = {
   feed_on_select = true,
@@ -51,4 +53,18 @@ local defaults = {
     },
   },
 }
+```
+
+To add a key binding to open the menu in vscode when using vscode-neovim:
+
+```
+    {
+        "command": "vscode-neovim.send",
+        // the key sequence to activate the binding
+        "key": "F4",
+        // don't activate during insert mode
+        "when": "editorTextFocus && neovim.mode != insert",
+        // the input to send to Neovim
+        "args": "<F4>"
+    }
 ```
