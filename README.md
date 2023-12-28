@@ -31,29 +31,37 @@ Install the plugin with your preferred package manager:
 Default setup:
 
 ```lua
-local defaults = {
-  feed_on_select = true,
-  prompt_for_expansions = true,
-  ---@type fun(item: any, idx: number)
-  on_select = function(_, _) end,
-  ---@class KeymapMenuHealthConfig
-  health = {
-    enabled = true,
-  },
-  ---@class KeymapMenuKeymapConfig
-  keymap = {
-    always_reload = false,
-    ---@class KeymapMenuDefaultsConfig
-    defaults = {},
-    ---@class KeymapMenuOverridesConfig
-    overrides = {
-      ---@type fun(lhs: string, rhs: function | string, desc: string, source: string): boolean
-      ignore_keymap_overrides = function(_, _, _, _)
-        return false
-      end,
+  ---@class KeymapMenuConfig
+  local defaults = {
+    feed_on_select = true,
+    prompt_for_expansions = true,
+    ---@type fun(item: any, idx: number)
+    on_select = function(_, _) end,
+
+    ---@class KeymapMenuHealthConfig
+    health = {
+      enabled = true,
     },
-  },
-}
+
+    ---@class KeymapMenuKeymapConfig
+    keymap = {
+      always_reload = true,
+      ---@type table<number, { lhs: string, desc: string }>
+      additional_text_objects = {},
+
+      ---@class KeymapMenuDefaultsConfig
+      defaults = {
+        ---@type fun(lhs: string, desc: string, source: string): boolean
+        ignore = M.default_defaults_ignore,
+      },
+
+      ---@class KeymapMenuOverridesConfig
+      overrides = {
+        ---@type fun(lhs: string, rhs: function | string, desc: string, source: table<number, string>): boolean
+        ignore = M.default_overrides_ignore,
+      },
+    },
+  }
 ```
 
 To add a key binding to open the menu in vscode when using vscode-neovim:

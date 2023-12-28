@@ -3,6 +3,7 @@ local M = {}
 local Common = require("keymap-menu.keymap.common")
 local Defaults = require("keymap-menu.keymap.defaults")
 local Overrides = require("keymap-menu.keymap.overrides")
+local Util = require("keymap-menu.util")
 
 local function load_check()
   if not M.loaded or M.opts.always_reload then
@@ -59,6 +60,22 @@ function M.load()
         table.insert(M.textobjects, keymap)
       end
     end
+  end
+
+  -- add additional textobjects
+  for _, textobject in ipairs(M.opts.additional_text_objects) do
+    table.insert(M.textobjects, {
+      debug = { "additional_text_objects" },
+      mode = "textobjects",
+      desc = Util.strings.trim(textobject.lhs),
+      lhs = textobject.lhs,
+      expansions = {},
+      register = false,
+      operator = false,
+      motion = false,
+      textobject = true,
+      sort = Util.strings.alpha_numeric_symbol_sort_string(textobject.lhs),
+    })
   end
 
   M.loaded = true

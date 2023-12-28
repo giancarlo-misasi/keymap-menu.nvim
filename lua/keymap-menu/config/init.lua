@@ -18,6 +18,8 @@ function M.defaults()
     ---@class KeymapMenuKeymapConfig
     keymap = {
       always_reload = true,
+      ---@type table<number, { lhs: string, desc: string }>
+      additional_text_objects = {},
 
       ---@class KeymapMenuDefaultsConfig
       defaults = {
