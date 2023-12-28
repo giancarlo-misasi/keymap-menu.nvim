@@ -1,4 +1,4 @@
-*keymap-menu.nvim.txt*    For Neovim >= 0.8.0    Last change: 2023 December 27
+*keymap-menu.nvim.txt*    For Neovim >= 0.8.0    Last change: 2023 December 28
 
 ==============================================================================
 Table of Contents                         *keymap-menu.nvim-table-of-contents*
@@ -6,6 +6,7 @@ Table of Contents                         *keymap-menu.nvim-table-of-contents*
 1. Keymap Menu                                  |keymap-menu.nvim-keymap-menu|
   - Features                           |keymap-menu.nvim-keymap-menu-features|
   - Installation                   |keymap-menu.nvim-keymap-menu-installation|
+  - Configuration                 |keymap-menu.nvim-keymap-menu-configuration|
 
 ==============================================================================
 1. Keymap Menu                                  *keymap-menu.nvim-keymap-menu*
@@ -32,28 +33,39 @@ LAZY.NVIM ~
 
 >lua
     {
-      "giancarlo-misasi/keymap-menu.nvim",
-      opts = {
-        -- your configuration comes here
-        -- or leave it empty to use the default settings
-        -- refer to the configuration section below
-      }
+            "giancarlo-misasi/keymap-menu.nvim",
+            priority = 1001,
+            lazy = false,
+            config = true
     }
 <
 
 
-PACKER ~
+CONFIGURATION                     *keymap-menu.nvim-keymap-menu-configuration*
 
 >lua
-    use {
-      "giancarlo-misasi/keymap-menu.nvim",
-      config = function()
-        require("keymap-menu").setup {
-          -- your configuration comes here
-          -- or leave it empty to use the default settings
-          -- refer to the configuration section below
-        }
-      end
+    local defaults = {
+      feed_on_select = true,
+      prompt_for_expansions = true,
+      ---@type fun(item: any, idx: number)
+      on_select = function(_, _) end,
+      ---@class KeymapMenuHealthConfig
+      health = {
+        enabled = true,
+      },
+      ---@class KeymapMenuKeymapConfig
+      keymap = {
+        always_reload = false,
+        ---@class KeymapMenuDefaultsConfig
+        defaults = {},
+        ---@class KeymapMenuOverridesConfig
+        overrides = {
+          ---@type fun(lhs: string, rhs: function | string, desc: string, source: string): boolean
+          ignore_keymap_overrides = function(_, _, _, _)
+            return false
+          end,
+        },
+      },
     }
 <
 
