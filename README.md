@@ -9,6 +9,7 @@ A lua plugin for Neovim that displays a searchable menu of key bindings that can
 - includes:
   - default keybinds found in index.txt
   - overrides set via vim.keymap.set
+- can be opened in vscode-neovim
 
 ## 📦 Installation
 
@@ -18,10 +19,10 @@ Install the plugin with your preferred package manager:
 
 ```lua
 {
-		"giancarlo-misasi/keymap-menu.nvim",
-		priority = 1001,
-		lazy = false,
-		config = true
+  "giancarlo-misasi/keymap-menu.nvim",
+  priority = 1001,
+  lazy = false,
+  config = true
 }
 ```
 
@@ -58,13 +59,13 @@ local defaults = {
 To add a key binding to open the menu in vscode when using vscode-neovim:
 
 ```
-    {
-        "command": "vscode-neovim.send",
-        // the key sequence to activate the binding
-        "key": "F4",
-        // don't activate during insert mode
-        "when": "editorTextFocus && neovim.mode != insert",
-        // the input to send to Neovim
-        "args": "<F4>"
-    }
+{
+    "command": "vscode-neovim.send",
+    // the key sequence to activate the binding
+    "key": "F4",
+    // don't activate during insert mode
+    "when": "editorTextFocus && neovim.mode != insert",
+    // the input to send to Neovim
+    "args": "<F4>"
+}
 ```
